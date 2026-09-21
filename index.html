@@ -1,0 +1,628 @@
+<!DOCTYPE html><html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Finance Dashboard</title>
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}"
+>
+
+</head><body><div class="app">
+
+    <!-- HEADER -->
+    <header class="header">
+
+        <div class="header-text">
+            <p>Selamat datang kembali</p>
+            <h1>Finance</h1>
+        </div>
+
+        <div class="profile">
+            A
+        </div>
+
+    </header>
+
+
+    <!-- BALANCE -->
+    <section class="balance-card">
+
+        <div class="balance-top">
+
+            <span>Saldo Saat Ini</span>
+
+            <button
+                type="button"
+                id="toggleBalance"
+                onclick="toggleBalance()"
+                aria-label="Sembunyikan saldo"
+            >
+                ◉
+            </button>
+
+        </div>
+
+        <h2 id="balanceValue">
+            Rp {{ "{:,.0f}".format(balance).replace(",", ".") }}
+        </h2>
+
+        <div class="balance-bottom">
+
+            <span>Saldo tersedia</span>
+
+            <span class="balance-status">
+                ● Aktif
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- SUMMARY -->
+    <section class="summary-grid">
+
+        <div class="summary-card">
+
+            <div class="summary-icon income-icon">
+                ↓
+            </div>
+
+            <div class="summary-info">
+                <span>Total Pemasukan</span>
+
+                <strong>
+                    Rp {{ "{:,.0f}".format(income).replace(",", ".") }}
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon expense-icon">
+                ↑
+            </div>
+
+            <div class="summary-info">
+                <span>Total Pengeluaran</span>
+
+                <strong>
+                    Rp {{ "{:,.0f}".format(expense).replace(",", ".") }}
+                </strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- QUICK ACTION -->
+    <section class="quick-section">
+
+        <div class="section-heading">
+            <div>
+                <span>Menu</span>
+                <h2>Akses Cepat</h2>
+            </div>
+        </div>
+
+
+        <div class="quick-grid">
+
+            <button
+                type="button"
+                class="quick-button"
+                onclick="openModal()"
+            >
+                <span class="quick-icon">＋</span>
+                <span>Tambah</span>
+            </button>
+
+
+            <button
+                type="button"
+                class="quick-button"
+                onclick="showTransactions()"
+            >
+                <span class="quick-icon">↕</span>
+                <span>Aktivitas</span>
+            </button>
+
+
+            <button
+                type="button"
+                class="quick-button"
+                onclick="location.reload()"
+            >
+                <span class="quick-icon">↻</span>
+                <span>Refresh</span>
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- TRANSACTION LIST -->
+    <section
+        class="transaction-section"
+        id="transactionSection"
+    >
+
+        <div class="section-heading">
+
+            <div>
+                <span>Aktivitas</span>
+                <h2>Transaksi Terbaru</h2>
+            </div>
+
+            <div class="transaction-count">
+                {{ count }}
+            </div>
+
+        </div>
+
+
+        {% if transactions %}
+
+            <div class="transaction-list">
+
+                {% for transaction in transactions %}
+
+                    <article class="transaction-item">
+
+                        <div class="transaction-main">
+
+                            <div class="
+                                transaction-icon
+                                {% if transaction['type'] == 'income' %}
+                                    transaction-income
+                                {% else %}
+                                    transaction-expense
+                                {% endif %}
+                            ">
+
+                                {% if transaction['type'] == 'income' %}
+                                    ↓
+                                {% else %}
+                                    ↑
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="transaction-info">
+
+                                <h3>
+                                    {{ transaction['title'] }}
+                                </h3>
+
+                                <p>
+                                    {{ transaction['category'] }}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="transaction-value">
+
+                            <strong class="
+                                {% if transaction['type'] == 'income' %}
+                                    income-text
+                                {% else %}
+                                    expense-text
+                                {% endif %}
+                            ">
+
+                                {% if transaction['type'] == 'income' %}
+                                    +
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                                Rp {{
+                                    "{:,.0f}".format(
+                                        transaction['amount']
+                                    ).replace(",", ".")
+                                }}
+
+                            </strong>
+
+                            <small>
+                                {{ transaction['created_at'][:10] }}
+                            </small>
+
+                        </div>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-icon">
+                    —
+                </div>
+
+                <h3>Belum ada transaksi</h3>
+
+                <p>
+                    Catat pemasukan atau pengeluaran
+                    untuk mulai mengatur keuanganmu.
+                </p>
+
+                <button
+                    type="button"
+                    onclick="openModal()"
+                >
+                    Tambah Transaksi
+                </button>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- ADD TRANSACTION MODAL -->
+    <div
+        class="modal"
+        id="transactionModal"
+        aria-hidden="true"
+    >
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <div>
+                    <span>Transaksi baru</span>
+                    <h2>Tambah Transaksi</h2>
+                </div>
+
+                <button
+                    type="button"
+                    class="close-button"
+                    onclick="closeModal()"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <form
+                action="{{ url_for('add_transaction') }}"
+                method="POST"
+            >
+
+                <div class="form-group">
+
+                    <label for="title">
+                        Nama transaksi
+                    </label>
+
+                    <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        placeholder="Contoh: Uang saku"
+                        autocomplete="off"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="amount">
+                        Jumlah
+                    </label>
+
+                    <input
+                        type="number"
+                        id="amount"
+                        name="amount"
+                        placeholder="50000"
+                        min="1"
+                        step="1"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="category">
+                        Kategori
+                    </label>
+
+                    <select
+                        id="category"
+                        name="category"
+                        required
+                    >
+
+                        <option value="">
+                            Pilih kategori
+                        </option>
+
+                        <option value="Makanan">
+                            Makanan
+                        </option>
+
+                        <option value="Transportasi">
+                            Transportasi
+                        </option>
+
+                        <option value="Belanja">
+                            Belanja
+                        </option>
+
+                        <option value="Pendidikan">
+                            Pendidikan
+                        </option>
+
+                        <option value="Hiburan">
+                            Hiburan
+                        </option>
+
+                        <option value="Tagihan">
+                            Tagihan
+                        </option>
+
+                        <option value="Tabungan">
+                            Tabungan
+                        </option>
+
+                        <option value="Gaji">
+                            Gaji
+                        </option>
+
+                        <option value="Bonus">
+                            Bonus
+                        </option>
+
+                        <option value="Lainnya">
+                            Lainnya
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Jenis transaksi
+                    </label>
+
+                    <div class="type-options">
+
+                        <label class="type-option income-option">
+
+                            <input
+                                type="radio"
+                                name="type"
+                                value="income"
+                                required
+                            >
+
+                            <span>Pemasukan</span>
+
+                        </label>
+
+
+                        <label class="type-option expense-option">
+
+                            <input
+                                type="radio"
+                                name="type"
+                                value="expense"
+                            >
+
+                            <span>Pengeluaran</span>
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="note">
+                        Catatan
+                    </label>
+
+                    <textarea
+                        id="note"
+                        name="note"
+                        rows="3"
+                        placeholder="Tambahkan catatan jika diperlukan"
+                    ></textarea>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="submit-button"
+                >
+                    Simpan Transaksi
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+
+        <button
+            type="button"
+            class="nav-item active"
+            onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+        >
+            <span>⌂</span>
+            <small>Beranda</small>
+        </button>
+
+
+        <button
+            type="button"
+            class="nav-item"
+            onclick="showTransactions()"
+        >
+            <span>↕</span>
+            <small>Aktivitas</small>
+        </button>
+
+
+        <button
+            type="button"
+            class="nav-add"
+            onclick="openModal()"
+        >
+            +
+        </button>
+
+
+        <button
+            type="button"
+            class="nav-item"
+        >
+            <span>◌</span>
+            <small>Statistik</small>
+        </button>
+
+
+        <button
+            type="button"
+            class="nav-item"
+        >
+            <span>◎</span>
+            <small>Profil</small>
+        </button>
+
+    </nav>
+
+</div>
+
+
+<script>
+
+    let balanceVisible = true;
+
+    const balanceElement =
+        document.getElementById("balanceValue");
+
+    const originalBalance =
+        balanceElement.textContent.trim();
+
+
+    function toggleBalance() {
+
+        const button =
+            document.getElementById("toggleBalance");
+
+        if (balanceVisible) {
+
+            balanceElement.textContent = "Rp •••••••";
+            button.textContent = "○";
+
+            balanceVisible = false;
+
+        } else {
+
+            balanceElement.textContent = originalBalance;
+            button.textContent = "◉";
+
+            balanceVisible = true;
+        }
+    }
+
+
+    function openModal() {
+
+        const modal =
+            document.getElementById("transactionModal");
+
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+
+        document.body.classList.add("modal-open");
+
+        setTimeout(() => {
+
+            document
+                .getElementById("title")
+                .focus();
+
+        }, 100);
+    }
+
+
+    function closeModal() {
+
+        const modal =
+            document.getElementById("transactionModal");
+
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+
+        document.body.classList.remove("modal-open");
+    }
+
+
+    function showTransactions() {
+
+        document
+            .getElementById("transactionSection")
+            .scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+    }
+
+
+    document
+        .getElementById("transactionModal")
+        .addEventListener("click", function(event) {
+
+            if (event.target === this) {
+                closeModal();
+            }
+
+        });
+
+
+    document.addEventListener("keydown", function(event) {
+
+        if (event.key === "Escape") {
+            closeModal();
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
