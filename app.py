@@ -16,7 +16,8 @@ def get_db():
 def init_db():
     db = get_db()
 
-    db.execute("""
+    db.execute(
+        """
         CREATE TABLE IF NOT EXISTS transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
@@ -26,7 +27,8 @@ def init_db():
             note TEXT DEFAULT '',
             created_at TEXT NOT NULL
         )
-    """)
+        """
+    )
 
     db.commit()
     db.close()
@@ -36,28 +38,36 @@ def init_db():
 def index():
     db = get_db()
 
-    transactions = db.execute("""
+    transactions = db.execute(
+        """
         SELECT *
         FROM transactions
         ORDER BY id DESC
-    """).fetchall()
+        """
+    ).fetchall()
 
-    income = db.execute("""
+    income = db.execute(
+        """
         SELECT COALESCE(SUM(amount), 0)
         FROM transactions
         WHERE type = 'income'
-    """).fetchone()[0]
+        """
+    ).fetchone()[0]
 
-    expense = db.execute("""
+    expense = db.execute(
+        """
         SELECT COALESCE(SUM(amount), 0)
         FROM transactions
         WHERE type = 'expense'
-    """).fetchone()[0]
+        """
+    ).fetchone()[0]
 
-    count = db.execute("""
+    count = db.execute(
+        """
         SELECT COUNT(*)
         FROM transactions
-    """).fetchone()[0]
+        """
+    ).fetchone()[0]
 
     balance = income - expense
 
@@ -92,20 +102,109 @@ def add_transaction():
     if amount <= 0:
         return redirect(url_for("index"))
 
-    if transaction_type not in ("income", "expense"):
+    if transaction_type not in ["income", "expense"]:
         return redirect(url_for("index"))
 
     db = get_db()
 
-    db.execute("""
-        INSERT INTO transactions (
+    db.execute(
+        """
+        INSERT INTO transactions
+        (title, amount, category, type, note, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
             title,
             amount,
             category,
-            type,
+            transaction_type,
             note,
-            created_at
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
+    )
+
+    db.commit()
+    db.close()
+
+    return redirect(url_for("index"))
+
+
+@app.route("/delete/<int:transaction_id>", methods=["POST"])
+def delete_transaction(transaction_id):
+    db = get_db()
+
+    db.execute(
+        """
+        DELETE FROM transactions
+        WHERE id = ?
+        """,
+        (transaction_id,)
+    )
+
+    db.commit()
+    db.close()
+
+    return redirect(url_for("index"))
+
+
+@app.route("/edit/<int:transaction_id>", methods=["POST"])
+def edit_transaction(transaction_id):
+    title = request.form.get("title", "").strip()
+    amount = request.form.get("amount", "").strip()
+    category = request.form.get("category", "").strip()
+    transaction_type = request.form.get("type", "").strip()
+    note = request.form.get("note", "").strip()
+
+    if not title or not amount or not category:
+        return redirect(url_for("index"))
+
+    try:
+        amount = float(amount)
+    except ValueError:
+        return redirect(url_for("index"))
+
+    if amount <= 0:
+        return redirect(url_for("index"))
+
+    if transaction_type not in ["income", "expense"]:
+        return redirect(url_for("index"))
+
+    db = get_db()
+
+    db.execute(
+        """
+        UPDATE transactions
+        SET
+            title = ?,
+            amount = ?,
+            category = ?,
+            type = ?,
+            note = ?
+        WHERE id = ?
+        """,
+        (
+            title,
+            amount,
+            category,
+            transaction_type,
+            note,
+            transaction_id
+        )
+    )
+
+    db.commit()
+    db.close()
+
+    return redirect(url_for("index"))
+
+
+if __name__ == "__main__":
+    init_db()
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+)        )
         VALUES (?, ?, ?, ?, ?, ?)
     """, (
         title,
